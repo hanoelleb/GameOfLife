@@ -2,6 +2,7 @@ package application;
 
 import java.util.Random;
 
+import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.stage.Stage;
@@ -12,14 +13,49 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
+import javafx.scene.text.Text;
 
 public class Main extends Application {
 
+	final int LIVE = 1;
+	final int DEAD = 0;
+	
 	final int BOARD_SIZE = 50;
+	int counter = 0;
 	Board board;
 	Rectangle[][] squares;
+	Text generations;
+	AnimationTimer anim;
 
 	boolean RUNNING = false;
+
+	void handleGameLoop() {
+
+		anim = new AnimationTimer() {
+			int timer = 0;
+
+			public void handle(long currentNanoTime) {
+				timer++;
+				if (timer % 30 == 0) {
+					counter++;
+					board.update();
+
+					for (int i = 0; i < BOARD_SIZE; i++) {
+						for (int j = 0; j < BOARD_SIZE; j++) {
+							if (board.getCell(i, j) == LIVE)
+								squares[i][j].setFill(Color.LIGHTGREEN);
+							else
+								squares[i][j].setFill(Color.BLACK);
+						}
+					}
+
+				}
+				generations.setText("Generations: " + counter);
+			}
+		};
+
+		anim.start();
+	}
 
 	@Override
 	public void start(Stage primaryStage) {
@@ -57,15 +93,21 @@ public class Main extends Application {
 				}
 			}
 
+			generations = new Text("Generations: 0");
+			grid.add(generations, 20, 51, 10, 8);
+
 			Button primary = new Button("Start/Stop/Resume");
 			primary.setOnMouseClicked(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent t) {
 					RUNNING = !RUNNING;
-					System.out.println(RUNNING);
+					if (RUNNING)
+						handleGameLoop();
+					else
+						anim.stop();
 				}
 			});
-			grid.add(primary, 20, 51, 10, 8);
+			grid.add(primary, 20, 61, 10, 8);
 
 			Button random = new Button("Randomize");
 			random.setOnMouseClicked(new EventHandler<MouseEvent>() {
@@ -73,12 +115,12 @@ public class Main extends Application {
 				public void handle(MouseEvent t) {
 					for (int i = 0; i < BOARD_SIZE; i++) {
 						for (int j = 0; j < BOARD_SIZE; j++) {
-							int next = new Random().nextInt(6);
-							if (next < 5) {
-								board.setCellToEmpty(i, j);
+							int next = new Random().nextInt(5);
+							if (next < 2) {
+								board.setCellToDead(i, j);
 								squares[i][j].setFill(Color.BLACK);
 							} else {
-								board.setCellToEmpty(i, j);
+								board.setCellToLive(i, j);
 								squares[i][j].setFill(Color.LIGHTGREEN);
 							}
 						}
@@ -86,7 +128,7 @@ public class Main extends Application {
 				}
 			});
 
-			grid.add(random, 20, 61, 10, 8);
+			grid.add(random, 20, 71, 10, 8);
 
 			Button clear = new Button("Clear");
 			clear.setOnMouseClicked(new EventHandler<MouseEvent>() {
@@ -94,13 +136,15 @@ public class Main extends Application {
 				public void handle(MouseEvent t) {
 					for (int i = 0; i < BOARD_SIZE; i++) {
 						for (int j = 0; j < BOARD_SIZE; j++) {
-							board.setCellToEmpty(i, j);
+							board.setCellToDead(i, j);
 							squares[i][j].setFill(Color.BLACK);
+							counter = 0;
+							generations.setText("Generations: 0");
 						}
 					}
 				}
 			});
-			grid.add(clear, 20, 71, 10, 8);
+			grid.add(clear, 20, 81, 10, 8);
 
 			Scene scene = new Scene(grid, 800, 1000);
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
